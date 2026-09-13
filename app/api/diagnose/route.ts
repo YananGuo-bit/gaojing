@@ -42,24 +42,13 @@ function buildResponseSchema(section: SectionConfig) {
   };
 }
 
-function genreInstruction(section: SectionConfig): string {
-  switch (section.kind) {
-    case 'cover_letter':
-      return `这是一封投稿 Cover Letter，不是论文正文段落。请按投稿信的文体标准评判：是否清楚说明研究的意义与期刊定位的契合度、是否恰当传达创新点而不夸大、开头结尾是否符合期刊惯例的措辞与语气（既不能过于随意，也不能谄媚或空洞）。评分维度分别对应：期刊定位契合度、创新性表达清晰度、语言得体度。改写示范应保持 Cover Letter 的信件体格式，而不是把它改写成论文段落。`;
-    case 'highlights':
-      return `这是投稿用的 Highlights（要点提炼），通常是 3-5 条简短要点，每条建议不超过85个字符（Cell / Nature 系列期刊的常见惯例）。请按此文体标准评判：是否足够简洁凝练、是否让创新点一眼可见、关键词是否精准而不空泛。评分维度分别对应：简洁凝练度、创新点显著度、关键词精准度。改写示范请仍然输出为 3-5 条独立要点（用换行分隔），不要写成完整段落。`;
-    default:
-      return `这是论文正文的一个片段（${section.label}）。请按学术论文写作标准评判。`;
-  }
-}
-
 function buildPrompt(discipline: string, tier: string, section: SectionConfig, text: string) {
   const dimensionList = section.dimensions.map((d) => `  - ${d.key}: ${d.label}`).join('\n');
   return `你是一名长期在 Nature 系列期刊担任编委、审稿经验丰富的地球科学领域科研写作导师，擅长指出学生稿件与顶刊/子刊写作范式之间的具体差距。
 
 学科方向：${discipline}；诊断对标层级：${tier}。
 
-${genreInstruction(section)}
+${section.genreInstruction}
 
 学生文本：
 """

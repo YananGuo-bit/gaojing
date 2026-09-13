@@ -110,6 +110,7 @@ export default function Home() {
   const [sectionKey, setSectionKey] = useState('introduction');
   const [manuscript, setManuscript] = useState(SAMPLE_TEXT);
   const [diagnosis, setDiagnosis] = useState<Diagnosis>(STATIC_EXAMPLE as Diagnosis);
+  const [diagnosisSectionKey, setDiagnosisSectionKey] = useState('introduction');
   const [diagTag, setDiagTag] = useState('示例结果（预生成）');
   const [status, setStatus] = useState('');
   const [banner, setBanner] = useState<{ text: string; kind: 'warn' | 'error' } | null>(null);
@@ -178,12 +179,10 @@ export default function Home() {
           not_authenticated: '请先使用 Google 登录后再试。',
         };
         setBanner({ text: copy[data?.error] || `诊断请求失败（${data?.error || '未知错误'}），请重试。`, kind: 'error' });
-        setDiagTag('示例结果（预生成）');
-        setDiagnosis(STATIC_EXAMPLE as Diagnosis);
-        setShowCompare(false);
         return;
       }
       setDiagnosis(data);
+      setDiagnosisSectionKey(sectionKey);
       setDiagTag('AI 实时诊断');
       setShowCompare(true);
       setSessionHistory((prev) => {
@@ -352,7 +351,7 @@ export default function Home() {
               placeholder="在此粘贴你的论文段落（建议 100–400 字）……"
             />
           </div>
-          {showCompare && (
+          {showCompare && diagnosisSectionKey === sectionKey && (
             <div className="compare">
               <div className="compare-col orig">
                 <span className="compare-label">学生原文</span>
@@ -373,39 +372,49 @@ export default function Home() {
           </div>
           <div className="diag-status">{status}</div>
           <div className="panel-body">
-            <div className="verdict">{diagnosis.tier_verdict}</div>
-            {section.dimensions.map((dim) => {
-              const s = diagnosis.scores[dim.key];
-              if (!s) return null;
-              const c = scoreColorVars(s.score);
-              return (
-                <div className="score-row" key={dim.key}>
-                  <div className="score-top">
-                    <span className="score-name">{dim.label}</span>
-                    <span className="score-num" style={{ color: c.fill }}>
-                      {s.score}
-                    </span>
-                  </div>
-                  <div className="score-track">
-                    <div
-                      className="score-fill"
-                      style={{ width: `${Math.max(0, Math.min(100, s.score))}%`, background: c.fill }}
-                    />
-                  </div>
-                  <div className="score-comment">{s.comment}</div>
-                </div>
-              );
-            })}
-            {diagnosis.comments.map((c, i) => (
-              <div className="comment-card" key={i}>
-                <div className="comment-quote">“{c.quote}”</div>
-                <div className="comment-issue">{c.issue}</div>
-                <div className="comment-practice">
-                  <b>对标层级通常这样处理：</b>
-                  {c.top_journal_practice}
-                </div>
+            {diagnosisSectionKey !== sectionKey ? (
+              <div className="pending-note">
+                你切换到了「{section.label}」，它有自己专属的评分标准（{section.dimensions.map((d) => d.label).join('、')}），
+                跟当前显示的诊断结果（针对「{getSection(diagnosisSectionKey).label}」）不是一回事。点击左上角「开始诊断」以「
+                {section.label}」的标准重新生成。
               </div>
-            ))}
+            ) : (
+              <>
+                <div className="verdict">{diagnosis.tier_verdict}</div>
+                {section.dimensions.map((dim) => {
+                  const s = diagnosis.scores[dim.key];
+                  if (!s) return null;
+                  const c = scoreColorVars(s.score);
+                  return (
+                    <div className="score-row" key={dim.key}>
+                      <div className="score-top">
+                        <span className="score-name">{dim.label}</span>
+                        <span className="score-num" style={{ color: c.fill }}>
+                          {s.score}
+                        </span>
+                      </div>
+                      <div className="score-track">
+                        <div
+                          className="score-fill"
+                          style={{ width: `${Math.max(0, Math.min(100, s.score))}%`, background: c.fill }}
+                        />
+                      </div>
+                      <div className="score-comment">{s.comment}</div>
+                    </div>
+                  );
+                })}
+                {diagnosis.comments.map((c, i) => (
+                  <div className="comment-card" key={i}>
+                    <div className="comment-quote">“{c.quote}”</div>
+                    <div className="comment-issue">{c.issue}</div>
+                    <div className="comment-practice">
+                      <b>对标层级通常这样处理：</b>
+                      {c.top_journal_practice}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </section>
       </div>
@@ -738,6 +747,15 @@ export default function Home() {
           font-size: 12.5px;
           color: var(--ink-soft);
           line-height: 1.55;
+        }
+        .pending-note {
+          font-size: 13px;
+          line-height: 1.7;
+          color: var(--ink-soft);
+          background: var(--mid-tint);
+          border-left: 3px solid var(--mid);
+          padding: 12px 14px;
+          border-radius: 0 5px 5px 0;
         }
         .verdict {
           font-size: 13.5px;
