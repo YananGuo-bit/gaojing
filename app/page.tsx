@@ -71,6 +71,37 @@ type HistoryItem = {
   score_logic: number | null;
 };
 
+type SessionRecord = {
+  id: string;
+  time: string;
+  discipline: string;
+  tier: string;
+  sectionLabel: string;
+  manuscriptPreview: string;
+  tierVerdict: string;
+};
+
+const SESSION_HISTORY_KEY = 'gaojing_session_history';
+
+function loadSessionHistory(): SessionRecord[] {
+  try {
+    const raw = window.localStorage.getItem(SESSION_HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSessionHistory(items: SessionRecord[]) {
+  try {
+    window.localStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(items.slice(0, 50)));
+  } catch {
+    // ignore (private browsing, storage disabled, etc.)
+  }
+}
+
 export default function Home() {
   const { data: session, status: sessionStatus } = useSession();
   const [authEnabled, setAuthEnabled] = useState(false);
@@ -87,6 +118,8 @@ export default function Home() {
   const [stats, setStats] = useState<{ available: boolean; count: number } | null>(null);
   const [history, setHistory] = useState<HistoryItem[] | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [sessionHistory, setSessionHistory] = useState<SessionRecord[]>([]);
+  const [showSessionHistory, setShowSessionHistory] = useState(false);
 
   const section = getSection(sectionKey);
 
@@ -99,6 +132,7 @@ export default function Home() {
       .then((r) => r.json())
       .then((d) => setAuthEnabled(Boolean(d?.enabled)))
       .catch(() => setAuthEnabled(false));
+    setSessionHistory(loadSessionHistory());
   }, []);
 
   useEffect(() => {
@@ -152,6 +186,22 @@ export default function Home() {
       setDiagnosis(data);
       setDiagTag('AI 实时诊断');
       setShowCompare(true);
+      setSessionHistory((prev) => {
+        const next: SessionRecord[] = [
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            time: new Date().toISOString(),
+            discipline,
+            tier,
+            sectionLabel: section.label,
+            manuscriptPreview: text.slice(0, 60) + (text.length > 60 ? '…' : ''),
+            tierVerdict: data.tier_verdict,
+          },
+          ...prev,
+        ];
+        saveSessionHistory(next);
+        return next;
+      });
       fetch('/api/stats')
         .then((r) => r.json())
         .then(setStats)
@@ -183,23 +233,25 @@ export default function Home() {
           </div>
         </div>
         <div className="masthead-right">
-          <span className="badge">v0.2 · 地理科学试点</span>
-          {authEnabled && (
-            <div className="auth-box">
-              {session?.user ? (
-                <>
-                  <span className="auth-email">{session.user.email}</span>
-                  <button type="button" onClick={() => signOut()}>
-                    退出登录
-                  </button>
-                </>
-              ) : (
-                <button type="button" onClick={() => signIn('google')}>
-                  使用 Google 登录
+          <span className="badge">v0.3 · 地理科学试点</span>
+          <div className="auth-box">
+            {!authEnabled ? (
+              <button type="button" disabled title="Google 登录尚未开放，敬请期待">
+                Google 登录（即将开放）
+              </button>
+            ) : session?.user ? (
+              <>
+                <span className="auth-email">{session.user.email}</span>
+                <button type="button" onClick={() => signOut()}>
+                  退出登录
                 </button>
-              )}
-            </div>
-          )}
+              </>
+            ) : (
+              <button type="button" onClick={() => signIn('google')}>
+                使用 Google 登录
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -244,6 +296,28 @@ export default function Home() {
       </div>
 
       {banner && <div className={`banner ${banner.kind}`}>{banner.text}</div>}
+
+      {sessionHistory.length > 0 && (
+        <div className="history-box">
+          <button type="button" className="history-toggle" onClick={() => setShowSessionHistory((v) => !v)}>
+            本次访问的诊断记录（{sessionHistory.length}） {showSessionHistory ? '收起 ▲' : '展开 ▼'}
+          </button>
+          {showSessionHistory && (
+            <div className="history-list">
+              {sessionHistory.map((h) => (
+                <div className="history-item" key={h.id}>
+                  <span className="history-meta">
+                    {new Date(h.time).toLocaleString('zh-CN')} · {h.discipline} · {h.tier} · {h.sectionLabel}
+                  </span>
+                  <span className="history-preview">“{h.manuscriptPreview}”</span>
+                  <span className="history-verdict">{h.tierVerdict}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="history-note">保存在你当前浏览器本地，仅你自己可见；换设备或清除浏览器数据后不会保留。</div>
+        </div>
+      )}
 
       {authEnabled && session?.user && history && history.length > 0 && (
         <div className="history-box">
@@ -561,6 +635,18 @@ export default function Home() {
         }
         .history-verdict {
           color: var(--ink-soft);
+        }
+        .history-preview {
+          font-family: 'Source Serif 4', Georgia, serif;
+          font-style: italic;
+          color: var(--ink);
+        }
+        .history-note {
+          font-size: 11px;
+          color: var(--ink-faint);
+          padding: 8px 14px;
+          border: 1px solid var(--line);
+          border-top: none;
         }
         .workspace {
           display: grid;

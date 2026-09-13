@@ -1,10 +1,10 @@
 export const DISCIPLINES = [
   { value: '地理科学', label: '地理科学（试点）', enabled: true },
-  { value: '生态与环境科学', label: '生态与环境科学（即将开放）', enabled: false },
-  { value: '遥感与地理信息科学', label: '遥感与地理信息科学（即将开放）', enabled: false },
-  { value: '大气科学', label: '大气科学（即将开放）', enabled: false },
-  { value: '海洋科学', label: '海洋科学（即将开放）', enabled: false },
-  { value: '地质学', label: '地质学（即将开放）', enabled: false },
+  { value: '环境科学', label: '环境科学（即将开放）', enabled: false },
+  { value: '生物学', label: '生物学（即将开放）', enabled: false },
+  { value: '化学', label: '化学（即将开放）', enabled: false },
+  { value: '材料科学', label: '材料科学（即将开放）', enabled: false },
+  { value: '医学与生命科学', label: '医学与生命科学（即将开放）', enabled: false },
 ] as const;
 
 export const TIERS = [
