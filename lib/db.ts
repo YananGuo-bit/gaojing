@@ -25,9 +25,11 @@ export async function ensureSchema() {
       score_logic INT,
       score_evidence INT,
       score_language INT,
-      rewrite TEXT
+      rewrite TEXT,
+      user_email TEXT
     )
   `;
+  await sql`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS user_email TEXT`;
   ensured = true;
   return sql;
 }

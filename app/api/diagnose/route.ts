@@ -1,54 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { ensureSchema } from '@/lib/db';
+import { getSection, type SectionConfig } from '@/lib/rubric';
 
 export const runtime = 'nodejs';
 
-const RESPONSE_SCHEMA = {
-  type: 'OBJECT',
-  properties: {
-    tier_verdict: { type: 'STRING' },
-    scores: {
+function buildResponseSchema(section: SectionConfig) {
+  const scoreProps: Record<string, unknown> = {};
+  section.dimensions.forEach((d) => {
+    scoreProps[d.key] = {
       type: 'OBJECT',
-      properties: {
-        logic: {
-          type: 'OBJECT',
-          properties: { score: { type: 'INTEGER' }, comment: { type: 'STRING' } },
-          required: ['score', 'comment'],
-        },
-        evidence: {
-          type: 'OBJECT',
-          properties: { score: { type: 'INTEGER' }, comment: { type: 'STRING' } },
-          required: ['score', 'comment'],
-        },
-        language: {
-          type: 'OBJECT',
-          properties: { score: { type: 'INTEGER' }, comment: { type: 'STRING' } },
-          required: ['score', 'comment'],
-        },
-      },
-      required: ['logic', 'evidence', 'language'],
-    },
-    comments: {
-      type: 'ARRAY',
-      items: {
+      properties: { score: { type: 'INTEGER' }, comment: { type: 'STRING' } },
+      required: ['score', 'comment'],
+    };
+  });
+  return {
+    type: 'OBJECT',
+    properties: {
+      tier_verdict: { type: 'STRING' },
+      scores: {
         type: 'OBJECT',
-        properties: {
-          quote: { type: 'STRING' },
-          issue: { type: 'STRING' },
-          top_journal_practice: { type: 'STRING' },
-        },
-        required: ['quote', 'issue', 'top_journal_practice'],
+        properties: scoreProps,
+        required: section.dimensions.map((d) => d.key),
       },
+      comments: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            quote: { type: 'STRING' },
+            issue: { type: 'STRING' },
+            top_journal_practice: { type: 'STRING' },
+          },
+          required: ['quote', 'issue', 'top_journal_practice'],
+        },
+      },
+      rewrite: { type: 'STRING' },
     },
-    rewrite: { type: 'STRING' },
-  },
-  required: ['tier_verdict', 'scores', 'comments', 'rewrite'],
-};
+    required: ['tier_verdict', 'scores', 'comments', 'rewrite'],
+  };
+}
 
-function buildPrompt(discipline: string, tier: string, section: string, text: string) {
-  return `你是一名长期在 Nature 系列子刊担任编委、审稿经验丰富的地球科学领域科研写作导师，擅长指出学生稿件与顶刊/子刊写作范式之间的具体差距。
+function genreInstruction(section: SectionConfig): string {
+  switch (section.kind) {
+    case 'cover_letter':
+      return `这是一封投稿 Cover Letter，不是论文正文段落。请按投稿信的文体标准评判：是否清楚说明研究的意义与期刊定位的契合度、是否恰当传达创新点而不夸大、开头结尾是否符合期刊惯例的措辞与语气（既不能过于随意，也不能谄媚或空洞）。评分维度分别对应：期刊定位契合度、创新性表达清晰度、语言得体度。改写示范应保持 Cover Letter 的信件体格式，而不是把它改写成论文段落。`;
+    case 'highlights':
+      return `这是投稿用的 Highlights（要点提炼），通常是 3-5 条简短要点，每条建议不超过85个字符（Cell / Nature 系列期刊的常见惯例）。请按此文体标准评判：是否足够简洁凝练、是否让创新点一眼可见、关键词是否精准而不空泛。评分维度分别对应：简洁凝练度、创新点显著度、关键词精准度。改写示范请仍然输出为 3-5 条独立要点（用换行分隔），不要写成完整段落。`;
+    default:
+      return `这是论文正文的一个片段（${section.label}）。请按学术论文写作标准评判。`;
+  }
+}
 
-请对下面这段学生撰写的论文文本进行诊断。学科方向：${discipline}；文段类型：${section}；诊断对标层级：${tier}。
+function buildPrompt(discipline: string, tier: string, section: SectionConfig, text: string) {
+  const dimensionList = section.dimensions.map((d) => `  - ${d.key}: ${d.label}`).join('\n');
+  return `你是一名长期在 Nature 系列期刊担任编委、审稿经验丰富的地球科学领域科研写作导师，擅长指出学生稿件与顶刊/子刊写作范式之间的具体差距。
+
+学科方向：${discipline}；诊断对标层级：${tier}。
+
+${genreInstruction(section)}
 
 学生文本：
 """
@@ -57,8 +68,9 @@ ${text.slice(0, 3000)}
 
 请给出诊断结果，字段要求：
 - tier_verdict：一句话判断这段文字目前更接近哪个层级、核心原因是什么，40-70字。
-- scores.logic / evidence / language：每项给 0-100 的整数分和 20-40 字评语，分别对应逻辑紧凑度、证据充分性、语言地道程度。
-- comments：3到5条，每条包含从原文逐字摘录的一小段（不超过20字）、具体问题（15-25字）、对标层级期刊在同样位置通常怎么写（给出具体可操作的做法，30-60字）。
+- scores：以下每个维度给 0-100 的整数分和 20-40 字评语：
+${dimensionList}
+- comments：3到5条，每条包含从原文逐字摘录的一小段（不超过20字）、具体问题（15-25字）、对标层级在同样位置通常怎么处理（给出具体可操作的做法，30-60字）。
 - rewrite：将学生原文改写为更接近目标层级写作风格的示范版本，仅用于对照学习，长度不超过原文的1.3倍，保留原文的核心研究内容，不得虚构新数据。`;
 }
 
@@ -71,6 +83,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const authEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  let userEmail: string | null = null;
+  if (authEnabled) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'not_authenticated', message: '请先使用 Google 登录' }, { status: 401 });
+    }
+    userEmail = session.user.email;
+  }
+
   let body: { discipline?: string; tier?: string; section?: string; text?: string };
   try {
     body = await req.json();
@@ -78,7 +100,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid_request', message: '请求体不是合法 JSON' }, { status: 400 });
   }
 
-  const { discipline, tier, section, text } = body ?? {};
+  const { discipline, tier, text } = body ?? {};
+  const section = getSection(String(body?.section || 'introduction'));
   if (typeof text !== 'string' || text.trim().length < 20) {
     return NextResponse.json(
       { error: 'invalid_request', message: '文本过短，至少需要 20 个字符' },
@@ -86,12 +109,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const prompt = buildPrompt(
-    String(discipline || '地理科学'),
-    String(tier || '领域子刊'),
-    String(section || '引言'),
-    text,
-  );
+  const prompt = buildPrompt(String(discipline || '地理科学'), String(tier || '领域子刊'), section, text);
 
   const model = 'gemini-3.6-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -105,7 +123,7 @@ export async function POST(req: NextRequest) {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
           responseMimeType: 'application/json',
-          responseSchema: RESPONSE_SCHEMA,
+          responseSchema: buildResponseSchema(section),
           temperature: 0.4,
         },
       }),
@@ -133,7 +151,7 @@ export async function POST(req: NextRequest) {
 
   let data: {
     tier_verdict?: string;
-    scores?: { logic?: { score?: number }; evidence?: { score?: number }; language?: { score?: number } };
+    scores?: Record<string, { score?: number }>;
     rewrite?: string;
   };
   try {
@@ -145,17 +163,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Best-effort persistence; never fail the request if the DB isn't provisioned yet.
   try {
     const sql = await ensureSchema();
     if (sql) {
+      const firstDimKey = section.dimensions[0]?.key;
+      const overallScore = firstDimKey ? data.scores?.[firstDimKey]?.score ?? null : null;
       await sql`
         INSERT INTO submissions
-          (discipline, tier, section, manuscript, tier_verdict, score_logic, score_evidence, score_language, rewrite)
+          (discipline, tier, section, manuscript, tier_verdict, score_logic, rewrite, user_email)
         VALUES
-          (${discipline}, ${tier}, ${section}, ${text.slice(0, 5000)}, ${data.tier_verdict ?? null},
-           ${data.scores?.logic?.score ?? null}, ${data.scores?.evidence?.score ?? null}, ${data.scores?.language?.score ?? null},
-           ${data.rewrite ?? null})
+          (${discipline}, ${tier}, ${section.label}, ${text.slice(0, 5000)}, ${data.tier_verdict ?? null},
+           ${overallScore}, ${data.rewrite ?? null}, ${userEmail})
       `;
     }
   } catch (e) {

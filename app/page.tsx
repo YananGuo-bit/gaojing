@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import { DISCIPLINES, TIERS, SECTIONS, getSection } from '@/lib/rubric';
 
 const SAMPLE_TEXT =
   '青藏高原多年冻土区的地表形变对气候变暖高度敏感，然而已有研究多聚焦于单点监测或短时间序列观测，缺乏区域尺度、长时序的形变过程刻画。本文利用InSAR技术反演了2015—2022年若尔盖地区的地表形变速率，发现形变呈现出明显的季节性波动特征。已有研究（Wang et al., 2019）也提到过类似现象，但未对其驱动机制做进一步讨论。本文认为，气温与降水的共同作用可能是造成这一现象的原因，后续将结合更多站点数据进行验证。';
@@ -12,7 +14,7 @@ const STATIC_EXAMPLE = {
     logic: { score: 58, comment: '缺口—方法—发现—机制推测的顺序合理，但"可能是"式的软表述削弱了论证力度。' },
     evidence: { score: 46, comment: '仅引用一篇同类研究作为对照，未与更广的区域研究或已知机制文献形成证据网络。' },
     language: { score: 63, comment: '句式规范但偏平铺直叙，关键发现未使用顶刊常见的强调句式与精确量化表达。' },
-  },
+  } as Record<string, { score: number; comment: string }>,
   comments: [
     {
       quote: '已有研究多聚焦于单点监测',
@@ -36,10 +38,9 @@ const STATIC_EXAMPLE = {
     '青藏高原多年冻土区地表形变对气候变暖响应敏感，但既有研究（如 Wang et al., 2019；覆盖单一观测站、时间跨度不足3年）难以刻画区域尺度的长期演化过程。本文基于InSAR技术反演2015—2022年若尔盖地区地表形变速率，识别出振幅约2–5 mm/yr的季节性波动，其峰值时相与区域气温回升期高度吻合，与冻融循环驱动地表形变的机制假设一致。这一发现为量化多年冻土退化的区域异质性提供了长时序观测证据。',
 };
 
-type ScoreDim = { score: number; comment: string };
 type Diagnosis = {
   tier_verdict: string;
-  scores: { logic: ScoreDim; evidence: ScoreDim; language: ScoreDim };
+  scores: Record<string, { score: number; comment: string }>;
   comments: { quote: string; issue: string; top_journal_practice: string }[];
   rewrite: string;
 };
@@ -60,10 +61,22 @@ function detectCitations(text: string): string[] {
   return Array.from(found);
 }
 
+type HistoryItem = {
+  id: number;
+  created_at: string;
+  discipline: string;
+  tier: string;
+  section: string;
+  tier_verdict: string | null;
+  score_logic: number | null;
+};
+
 export default function Home() {
+  const { data: session, status: sessionStatus } = useSession();
+  const [authEnabled, setAuthEnabled] = useState(false);
   const [discipline, setDiscipline] = useState('地理科学');
   const [tier, setTier] = useState('领域子刊');
-  const [section, setSection] = useState('引言');
+  const [sectionKey, setSectionKey] = useState('introduction');
   const [manuscript, setManuscript] = useState(SAMPLE_TEXT);
   const [diagnosis, setDiagnosis] = useState<Diagnosis>(STATIC_EXAMPLE as Diagnosis);
   const [diagTag, setDiagTag] = useState('示例结果（预生成）');
@@ -72,18 +85,40 @@ export default function Home() {
   const [running, setRunning] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
   const [stats, setStats] = useState<{ available: boolean; count: number } | null>(null);
+  const [history, setHistory] = useState<HistoryItem[] | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const section = getSection(sectionKey);
 
   useEffect(() => {
     fetch('/api/stats')
       .then((r) => r.json())
       .then(setStats)
       .catch(() => setStats(null));
+    fetch('/api/auth-config')
+      .then((r) => r.json())
+      .then((d) => setAuthEnabled(Boolean(d?.enabled)))
+      .catch(() => setAuthEnabled(false));
   }, []);
 
+  useEffect(() => {
+    if (authEnabled && session?.user) {
+      fetch('/api/history')
+        .then((r) => r.json())
+        .then((d) => setHistory(d?.items ?? []))
+        .catch(() => setHistory(null));
+    }
+  }, [authEnabled, session]);
+
   const citations = detectCitations(manuscript);
+  const needsLogin = authEnabled && sessionStatus !== 'loading' && !session?.user;
 
   async function runDiagnosis() {
     if (running) return;
+    if (needsLogin) {
+      signIn('google');
+      return;
+    }
     const text = manuscript.trim();
     if (text.length < 20) {
       setBanner({ text: '请先粘贴或载入一段至少20字的稿件文本。', kind: 'warn' });
@@ -98,16 +133,16 @@ export default function Home() {
       const res = await fetch('/api/diagnose', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ discipline, tier, section, text }),
+        body: JSON.stringify({ discipline, tier, section: sectionKey, text }),
       });
       const data = await res.json();
       if (!res.ok) {
-        const copy: Record<string, string> =
-          {
-            rate_limited: '当前请求较多，请稍后再试。',
-            invalid_json: 'AI 返回内容解析失败，请重试一次。',
-            server_not_configured: '服务端尚未配置模型密钥，请联系管理员。',
-          };
+        const copy: Record<string, string> = {
+          rate_limited: '当前请求较多，请稍后再试。',
+          invalid_json: 'AI 返回内容解析失败，请重试一次。',
+          server_not_configured: '服务端尚未配置模型密钥，请联系管理员。',
+          not_authenticated: '请先使用 Google 登录后再试。',
+        };
         setBanner({ text: copy[data?.error] || `诊断请求失败（${data?.error || '未知错误'}），请重试。`, kind: 'error' });
         setDiagTag('示例结果（预生成）');
         setDiagnosis(STATIC_EXAMPLE as Diagnosis);
@@ -121,6 +156,12 @@ export default function Home() {
         .then((r) => r.json())
         .then(setStats)
         .catch(() => {});
+      if (authEnabled && session?.user) {
+        fetch('/api/history')
+          .then((r) => r.json())
+          .then((d) => setHistory(d?.items ?? []))
+          .catch(() => {});
+      }
     } catch {
       setBanner({ text: '网络请求失败，请检查网络后重试。', kind: 'error' });
     } finally {
@@ -141,36 +182,56 @@ export default function Home() {
             让学生对照子刊 / 顶刊的写作范式，看清自己的稿件与目标之间还差在哪——诊断在前，示范在侧，原文永远由学生自己完成。
           </div>
         </div>
-        <span className="badge">v0.1 · 地理科学试点</span>
+        <div className="masthead-right">
+          <span className="badge">v0.2 · 地理科学试点</span>
+          {authEnabled && (
+            <div className="auth-box">
+              {session?.user ? (
+                <>
+                  <span className="auth-email">{session.user.email}</span>
+                  <button type="button" onClick={() => signOut()}>
+                    退出登录
+                  </button>
+                </>
+              ) : (
+                <button type="button" onClick={() => signIn('google')}>
+                  使用 Google 登录
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="controls">
         <div className="field">
           <label>学科方向</label>
           <select value={discipline} onChange={(e) => setDiscipline(e.target.value)}>
-            <option value="地理科学">地理科学（试点）</option>
-            <option value="生态与环境科学" disabled>
-              生态与环境科学（即将开放）
-            </option>
-            <option value="遥感与地信" disabled>
-              遥感与地信（即将开放）
-            </option>
+            {DISCIPLINES.map((d) => (
+              <option key={d.value} value={d.value} disabled={!d.enabled}>
+                {d.label}
+              </option>
+            ))}
           </select>
         </div>
         <div className="field">
           <label>对标层级</label>
           <select value={tier} onChange={(e) => setTier(e.target.value)}>
-            <option value="普通专业期刊">普通专业期刊</option>
-            <option value="领域子刊">领域子刊（如 Scientific Data）</option>
-            <option value="顶刊">顶刊（如 Nature Communications / Nature Sustainability）</option>
+            {TIERS.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
           </select>
         </div>
         <div className="field">
           <label>文段类型</label>
-          <select value={section} onChange={(e) => setSection(e.target.value)}>
-            <option value="摘要">摘要</option>
-            <option value="引言">引言片段</option>
-            <option value="讨论">讨论片段</option>
+          <select value={sectionKey} onChange={(e) => setSectionKey(e.target.value)}>
+            {SECTIONS.map((s) => (
+              <option key={s.key} value={s.key}>
+                {s.label}
+              </option>
+            ))}
           </select>
         </div>
         <div className="spacer" />
@@ -178,11 +239,31 @@ export default function Home() {
           载入示例文本
         </button>
         <button type="button" className="primary" onClick={runDiagnosis} disabled={running}>
-          {running ? 'AI 正在比对顶刊范式…' : '开始诊断（调用 AI）'}
+          {running ? 'AI 正在比对顶刊范式…' : needsLogin ? '登录后开始诊断' : '开始诊断（调用 AI）'}
         </button>
       </div>
 
       {banner && <div className={`banner ${banner.kind}`}>{banner.text}</div>}
+
+      {authEnabled && session?.user && history && history.length > 0 && (
+        <div className="history-box">
+          <button type="button" className="history-toggle" onClick={() => setShowHistory((v) => !v)}>
+            我的历史记录（{history.length}） {showHistory ? '收起 ▲' : '展开 ▼'}
+          </button>
+          {showHistory && (
+            <div className="history-list">
+              {history.map((h) => (
+                <div className="history-item" key={h.id}>
+                  <span className="history-meta">
+                    {new Date(h.created_at).toLocaleString('zh-CN')} · {h.discipline} · {h.tier} · {h.section}
+                  </span>
+                  <span className="history-verdict">{h.tier_verdict}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="workspace">
         <section className="panel">
@@ -205,7 +286,7 @@ export default function Home() {
               </div>
               <div className="compare-col rewrite">
                 <span className="compare-label">对照示范 · 同层级改写</span>
-                <div>{diagnosis.rewrite}</div>
+                <div style={{ whiteSpace: 'pre-line' }}>{diagnosis.rewrite}</div>
               </div>
             </div>
           )}
@@ -219,14 +300,14 @@ export default function Home() {
           <div className="diag-status">{status}</div>
           <div className="panel-body">
             <div className="verdict">{diagnosis.tier_verdict}</div>
-            {(['logic', 'evidence', 'language'] as const).map((key) => {
-              const label = { logic: '逻辑紧凑度', evidence: '证据充分性', language: '语言地道程度' }[key];
-              const s = diagnosis.scores[key];
+            {section.dimensions.map((dim) => {
+              const s = diagnosis.scores[dim.key];
+              if (!s) return null;
               const c = scoreColorVars(s.score);
               return (
-                <div className="score-row" key={key}>
+                <div className="score-row" key={dim.key}>
                   <div className="score-top">
-                    <span className="score-name">{label}</span>
+                    <span className="score-name">{dim.label}</span>
                     <span className="score-num" style={{ color: c.fill }}>
                       {s.score}
                     </span>
@@ -246,7 +327,7 @@ export default function Home() {
                 <div className="comment-quote">“{c.quote}”</div>
                 <div className="comment-issue">{c.issue}</div>
                 <div className="comment-practice">
-                  <b>顶刊/子刊通常这样处理：</b>
+                  <b>对标层级通常这样处理：</b>
                   {c.top_journal_practice}
                 </div>
               </div>
@@ -294,7 +375,9 @@ export default function Home() {
         </div>
         {stats && (
           <div className="stats-line">
-            {stats.available ? `数据库已连接 · 累计收录 ${stats.count} 次诊断记录` : '数据库尚未配置（在 Vercel 项目中添加 Postgres 存储后自动启用）'}
+            {stats.available
+              ? `数据库已连接 · 累计收录 ${stats.count} 次诊断记录`
+              : '数据库尚未配置（在 Vercel 项目中添加 Postgres 存储后自动启用）'}
           </div>
         )}
       </div>
@@ -319,6 +402,12 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           gap: 6px;
+        }
+        .masthead-right {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 8px;
         }
         .wordmark {
           display: flex;
@@ -354,6 +443,16 @@ export default function Home() {
           border-radius: 3px;
           white-space: nowrap;
           text-transform: uppercase;
+        }
+        .auth-box {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .auth-email {
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 11px;
+          color: var(--ink-faint);
         }
         .controls {
           display: flex;
@@ -429,6 +528,39 @@ export default function Home() {
           background: var(--low-tint);
           border-color: var(--low);
           color: var(--ink);
+        }
+        .history-box {
+          margin-bottom: 18px;
+        }
+        .history-toggle {
+          font-size: 12.5px;
+          color: var(--ink-soft);
+          background: transparent;
+          border: 1px dashed var(--line);
+          width: 100%;
+          text-align: left;
+        }
+        .history-list {
+          border: 1px solid var(--line);
+          border-top: none;
+          border-radius: 0 0 6px 6px;
+          padding: 10px 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .history-item {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          font-size: 12px;
+        }
+        .history-meta {
+          font-family: 'IBM Plex Mono', monospace;
+          color: var(--ink-faint);
+        }
+        .history-verdict {
+          color: var(--ink-soft);
         }
         .workspace {
           display: grid;
