@@ -148,6 +148,19 @@ export default function Home() {
   const citations = detectCitations(manuscript);
   const needsLogin = authEnabled && sessionStatus !== 'loading' && !session?.user;
 
+  function removeSessionRecord(id: string) {
+    setSessionHistory((prev) => {
+      const next = prev.filter((h) => h.id !== id);
+      saveSessionHistory(next);
+      return next;
+    });
+  }
+
+  function clearSessionHistory() {
+    setSessionHistory([]);
+    saveSessionHistory([]);
+  }
+
   async function runDiagnosis() {
     if (running) return;
     if (needsLogin) {
@@ -232,7 +245,7 @@ export default function Home() {
           </div>
         </div>
         <div className="masthead-right">
-          <span className="badge">v0.3 · 地理科学试点</span>
+          <span className="badge">v0.4 · 地理科学试点</span>
           <div className="auth-box">
             {!authEnabled ? (
               <button type="button" disabled title="Google 登录尚未开放，敬请期待">
@@ -298,16 +311,32 @@ export default function Home() {
 
       {sessionHistory.length > 0 && (
         <div className="history-box">
-          <button type="button" className="history-toggle" onClick={() => setShowSessionHistory((v) => !v)}>
-            本次访问的诊断记录（{sessionHistory.length}） {showSessionHistory ? '收起 ▲' : '展开 ▼'}
-          </button>
+          <div className="history-bar">
+            <button type="button" className="history-toggle" onClick={() => setShowSessionHistory((v) => !v)}>
+              本次访问的诊断记录（{sessionHistory.length}） {showSessionHistory ? '收起 ▲' : '展开 ▼'}
+            </button>
+            <button
+              type="button"
+              className="history-clear-all"
+              onClick={() => {
+                if (window.confirm('清除本次访问保存的全部诊断记录？此操作不可撤销。')) clearSessionHistory();
+              }}
+            >
+              全部清除
+            </button>
+          </div>
           {showSessionHistory && (
             <div className="history-list">
               {sessionHistory.map((h) => (
                 <div className="history-item" key={h.id}>
-                  <span className="history-meta">
-                    {new Date(h.time).toLocaleString('zh-CN')} · {h.discipline} · {h.tier} · {h.sectionLabel}
-                  </span>
+                  <div className="history-item-row">
+                    <span className="history-meta">
+                      {new Date(h.time).toLocaleString('zh-CN')} · {h.discipline} · {h.tier} · {h.sectionLabel}
+                    </span>
+                    <button type="button" className="history-remove" onClick={() => removeSessionRecord(h.id)}>
+                      删除
+                    </button>
+                  </div>
                   <span className="history-preview">“{h.manuscriptPreview}”</span>
                   <span className="history-verdict">{h.tierVerdict}</span>
                 </div>
@@ -373,11 +402,23 @@ export default function Home() {
           <div className="diag-status">{status}</div>
           <div className="panel-body">
             {diagnosisSectionKey !== sectionKey ? (
-              <div className="pending-note">
-                你切换到了「{section.label}」，它有自己专属的评分标准（{section.dimensions.map((d) => d.label).join('、')}），
-                跟当前显示的诊断结果（针对「{getSection(diagnosisSectionKey).label}」）不是一回事。点击左上角「开始诊断」以「
-                {section.label}」的标准重新生成。
-              </div>
+              <>
+                <div className="verdict pending">
+                  「{section.label}」的评分标准如下，点击左上角「开始诊断」查看具体分数与意见。
+                </div>
+                {section.dimensions.map((dim) => (
+                  <div className="score-row pending" key={dim.key}>
+                    <div className="score-top">
+                      <span className="score-name">{dim.label}</span>
+                      <span className="score-num pending">--</span>
+                    </div>
+                    <div className="score-track">
+                      <div className="score-fill pending" style={{ width: '0%' }} />
+                    </div>
+                    <div className="score-comment pending">诊断后显示评语</div>
+                  </div>
+                ))}
+              </>
             ) : (
               <>
                 <div className="verdict">{diagnosis.tier_verdict}</div>
@@ -615,13 +656,43 @@ export default function Home() {
         .history-box {
           margin-bottom: 18px;
         }
+        .history-bar {
+          display: flex;
+          gap: 8px;
+        }
         .history-toggle {
           font-size: 12.5px;
           color: var(--ink-soft);
           background: transparent;
           border: 1px dashed var(--line);
-          width: 100%;
+          flex: 1;
           text-align: left;
+        }
+        .history-clear-all {
+          font-size: 12px;
+          color: var(--pen);
+          background: transparent;
+          border: 1px solid var(--pen);
+          white-space: nowrap;
+          padding: 9px 12px;
+        }
+        .history-item-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+        }
+        .history-remove {
+          font-size: 11px;
+          color: var(--ink-faint);
+          background: transparent;
+          border: none;
+          padding: 2px 6px;
+          text-decoration: underline;
+          flex-shrink: 0;
+        }
+        .history-remove:hover {
+          color: var(--pen);
         }
         .history-list {
           border: 1px solid var(--line);
@@ -748,14 +819,24 @@ export default function Home() {
           color: var(--ink-soft);
           line-height: 1.55;
         }
-        .pending-note {
-          font-size: 13px;
-          line-height: 1.7;
-          color: var(--ink-soft);
-          background: var(--mid-tint);
-          border-left: 3px solid var(--mid);
-          padding: 12px 14px;
-          border-radius: 0 5px 5px 0;
+        .verdict.pending {
+          background: var(--paper);
+          border-left-color: var(--ink-faint);
+          color: var(--ink-faint);
+        }
+        .score-row.pending .score-name {
+          color: var(--ink-faint);
+        }
+        .score-num.pending {
+          color: var(--ink-faint);
+          font-family: 'IBM Plex Mono', monospace;
+        }
+        .score-fill.pending {
+          background: var(--ink-faint);
+        }
+        .score-comment.pending {
+          color: var(--ink-faint);
+          font-style: italic;
         }
         .verdict {
           font-size: 13.5px;
