@@ -9,8 +9,8 @@ export const DISCIPLINES = [
 
 export const TIERS = [
   { value: '普通专业期刊', label: '普通专业期刊' },
-  { value: '领域子刊', label: '领域子刊（如 Nature Geoscience）' },
-  { value: '顶刊', label: '顶刊（如 Science / Nature / Cell）' },
+  { value: '领域子刊', label: '高级范文（如 Nature Geoscience）' },
+  { value: '顶刊', label: '经典范文（如 Nature）' },
 ] as const;
 
 export type Dimension = { key: string; label: string };

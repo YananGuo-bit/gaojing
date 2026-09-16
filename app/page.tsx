@@ -164,7 +164,7 @@ export default function Home() {
   async function runDiagnosis() {
     if (running) return;
     if (needsLogin) {
-      signIn('google');
+      signIn('bnu-sso');
       return;
     }
     const text = manuscript.trim();
@@ -189,7 +189,7 @@ export default function Home() {
           rate_limited: '当前请求较多，请稍后再试。',
           invalid_json: 'AI 返回内容解析失败，请重试一次。',
           server_not_configured: '服务端尚未配置模型密钥，请联系管理员。',
-          not_authenticated: '请先使用 Google 登录后再试。',
+          not_authenticated: '请先使用北京师范大学统一认证登录后再试。',
         };
         setBanner({ text: copy[data?.error] || `诊断请求失败（${data?.error || '未知错误'}），请重试。`, kind: 'error' });
         return;
@@ -248,19 +248,19 @@ export default function Home() {
           <span className="badge">v0.4 · 地理科学试点</span>
           <div className="auth-box">
             {!authEnabled ? (
-              <button type="button" disabled title="Google 登录尚未开放，敬请期待">
-                Google 登录（即将开放）
+              <button type="button" disabled title="统一认证登录尚未开放，敬请期待">
+                统一认证登录（即将开放）
               </button>
             ) : session?.user ? (
               <>
-                <span className="auth-email">{session.user.email}</span>
+                <span className="auth-email">{session.user.email || session.user.name}</span>
                 <button type="button" onClick={() => signOut()}>
                   退出登录
                 </button>
               </>
             ) : (
-              <button type="button" onClick={() => signIn('google')}>
-                使用 Google 登录
+              <button type="button" onClick={() => signIn('bnu-sso')}>
+                使用北京师范大学统一认证登录
               </button>
             )}
           </div>

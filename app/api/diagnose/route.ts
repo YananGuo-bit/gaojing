@@ -72,7 +72,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const authEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  const authEnabled = Boolean(
+    process.env.BNU_SSO_CLIENT_ID &&
+      process.env.BNU_SSO_CLIENT_SECRET &&
+      process.env.BNU_SSO_AUTHORIZATION_URL &&
+      process.env.BNU_SSO_TOKEN_URL &&
+      process.env.BNU_SSO_USERINFO_URL,
+  );
   let userEmail: string | null = null;
   if (authEnabled) {
     const session = await getServerSession(authOptions);
