@@ -14,7 +14,7 @@ const bnuConfigured = Boolean(clientId && clientSecret && authorizationUrl && to
 const bnuProvider = bnuConfigured
   ? {
       id: 'bnu-sso',
-      name: '北京师范大学统一认证',
+      name: '北京师范大学统一身份认证',
       type: 'oauth' as const,
       authorization: { url: authorizationUrl, params: { scope: 'openid profile' } },
       token: tokenUrl,
