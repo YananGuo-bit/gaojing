@@ -248,8 +248,8 @@ export default function Home() {
           <span className="badge">v0.4 · 地理科学试点</span>
           <div className="auth-box">
             {!authEnabled ? (
-              <button type="button" disabled title="统一身份认证登录尚未开放，敬请期待">
-                统一身份认证登录（即将开放）
+              <button type="button" disabled title="北京师范大学统一身份认证登录尚未开放，敬请期待">
+                北京师范大学统一身份认证登录（即将开放）
               </button>
             ) : session?.user ? (
               <>
