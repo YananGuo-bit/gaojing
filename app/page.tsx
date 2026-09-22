@@ -539,26 +539,26 @@ export default function Home() {
           gap: 12px;
         }
         .wordmark h1 {
-          font-size: 34px;
+          font-size: 36px;
           font-weight: 700;
           letter-spacing: 0.5px;
         }
         .wordmark .en {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 12px;
+          font-size: 13.5px;
           color: var(--ink-faint);
           letter-spacing: 1.5px;
           text-transform: uppercase;
         }
         .tagline {
-          font-size: 14px;
+          font-size: 15.5px;
           color: var(--ink-soft);
           max-width: 56ch;
           line-height: 1.6;
         }
         .badge {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 11px;
+          font-size: 12.5px;
           letter-spacing: 0.8px;
           color: var(--pen);
           border: 1px solid var(--pen);
@@ -575,7 +575,7 @@ export default function Home() {
         }
         .auth-email {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 11px;
+          font-size: 12.5px;
           color: var(--ink-faint);
         }
         .controls {
@@ -596,7 +596,7 @@ export default function Home() {
           gap: 5px;
         }
         .field label {
-          font-size: 11px;
+          font-size: 12.5px;
           text-transform: uppercase;
           letter-spacing: 0.7px;
           color: var(--ink-faint);
@@ -604,7 +604,7 @@ export default function Home() {
         }
         select {
           font-family: inherit;
-          font-size: 13.5px;
+          font-size: 15px;
           color: var(--ink);
           background: var(--paper);
           border: 1px solid var(--line);
@@ -617,7 +617,7 @@ export default function Home() {
         }
         button {
           font-family: 'IBM Plex Sans', sans-serif;
-          font-size: 13.5px;
+          font-size: 15px;
           font-weight: 500;
           border-radius: 5px;
           border: 1px solid var(--line);
@@ -636,7 +636,7 @@ export default function Home() {
           cursor: not-allowed;
         }
         .banner {
-          font-size: 13px;
+          font-size: 14.5px;
           padding: 10px 14px;
           border-radius: 6px;
           margin-bottom: 18px;
@@ -661,7 +661,7 @@ export default function Home() {
           gap: 8px;
         }
         .history-toggle {
-          font-size: 12.5px;
+          font-size: 14px;
           color: var(--ink-soft);
           background: transparent;
           border: 1px dashed var(--line);
@@ -669,7 +669,7 @@ export default function Home() {
           text-align: left;
         }
         .history-clear-all {
-          font-size: 12px;
+          font-size: 13.5px;
           color: var(--pen);
           background: transparent;
           border: 1px solid var(--pen);
@@ -683,7 +683,7 @@ export default function Home() {
           gap: 8px;
         }
         .history-remove {
-          font-size: 11px;
+          font-size: 12.5px;
           color: var(--ink-faint);
           background: transparent;
           border: none;
@@ -707,7 +707,7 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           gap: 2px;
-          font-size: 12px;
+          font-size: 13.5px;
         }
         .history-meta {
           font-family: 'IBM Plex Mono', monospace;
@@ -722,7 +722,7 @@ export default function Home() {
           color: var(--ink);
         }
         .history-note {
-          font-size: 11px;
+          font-size: 12.5px;
           color: var(--ink-faint);
           padding: 8px 14px;
           border: 1px solid var(--line);
@@ -754,11 +754,11 @@ export default function Home() {
           border-bottom: 1px solid var(--line);
         }
         .panel-head h3 {
-          font-size: 15px;
+          font-size: 16.5px;
           font-weight: 600;
         }
         .panel-head .hint {
-          font-size: 11px;
+          font-size: 12.5px;
           color: var(--ink-faint);
           font-family: 'IBM Plex Mono', monospace;
         }
@@ -774,13 +774,13 @@ export default function Home() {
           background: transparent;
           color: var(--ink);
           font-family: 'Source Serif 4', Georgia, serif;
-          font-size: 16.5px;
+          font-size: 18px;
           line-height: 1.85;
           padding: 0;
         }
         .diag-status {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 12px;
+          font-size: 13.5px;
           color: var(--ink-faint);
           padding: 2px 18px 0;
           min-height: 18px;
@@ -797,12 +797,12 @@ export default function Home() {
           align-items: baseline;
         }
         .score-name {
-          font-size: 13px;
+          font-size: 14.5px;
           font-weight: 600;
         }
         .score-num {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 13px;
+          font-size: 14.5px;
         }
         .score-track {
           height: 7px;
@@ -815,7 +815,7 @@ export default function Home() {
           border-radius: 4px;
         }
         .score-comment {
-          font-size: 12.5px;
+          font-size: 14px;
           color: var(--ink-soft);
           line-height: 1.55;
         }
@@ -839,7 +839,7 @@ export default function Home() {
           font-style: italic;
         }
         .verdict {
-          font-size: 13.5px;
+          font-size: 15px;
           line-height: 1.6;
           color: var(--ink);
           background: var(--accent-tint);
@@ -858,18 +858,18 @@ export default function Home() {
         .comment-quote {
           font-family: 'Source Serif 4', Georgia, serif;
           font-style: italic;
-          font-size: 13.5px;
+          font-size: 15px;
           color: var(--ink);
           margin-bottom: 5px;
         }
         .comment-issue {
-          font-size: 12.5px;
+          font-size: 14px;
           font-weight: 600;
           color: var(--pen);
           margin-bottom: 3px;
         }
         .comment-practice {
-          font-size: 12.5px;
+          font-size: 14px;
           color: var(--ink-soft);
           line-height: 1.55;
         }
@@ -889,7 +889,7 @@ export default function Home() {
         }
         .compare-col {
           padding: 18px;
-          font-size: 14.5px;
+          font-size: 16px;
           line-height: 1.8;
           font-family: 'Source Serif 4', Georgia, serif;
         }
@@ -903,7 +903,7 @@ export default function Home() {
         }
         .compare-label {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 10.5px;
+          font-size: 12px;
           text-transform: uppercase;
           letter-spacing: 0.7px;
           color: var(--ink-faint);
@@ -917,7 +917,7 @@ export default function Home() {
         }
         .cite-chip {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 12px;
+          font-size: 13.5px;
           padding: 5px 10px;
           border-radius: 14px;
           background: var(--paper);
@@ -933,7 +933,7 @@ export default function Home() {
           margin-right: 6px;
         }
         .cite-empty {
-          font-size: 13px;
+          font-size: 14.5px;
           color: var(--ink-faint);
         }
         .roadmap {
@@ -942,7 +942,7 @@ export default function Home() {
           padding-top: 18px;
         }
         .roadmap h3 {
-          font-size: 13px;
+          font-size: 14.5px;
           text-transform: uppercase;
           letter-spacing: 0.6px;
           color: var(--ink-faint);
@@ -966,7 +966,7 @@ export default function Home() {
           }
         }
         .roadmap-item {
-          font-size: 12.5px;
+          font-size: 14px;
           color: var(--ink-soft);
           line-height: 1.55;
           padding: 12px;
@@ -977,13 +977,13 @@ export default function Home() {
           display: block;
           color: var(--ink);
           font-weight: 600;
-          font-size: 13px;
+          font-size: 14.5px;
           margin-bottom: 4px;
         }
         .stats-line {
           margin-top: 14px;
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 11.5px;
+          font-size: 13px;
           color: var(--ink-faint);
         }
       `}</style>
