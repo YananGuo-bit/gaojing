@@ -241,7 +241,7 @@ export default function Home() {
             <span className="en">Manuscript Mirror · AI 科研写作诊断</span>
           </div>
           <div className="tagline">
-            让学生对照子刊 / 顶刊的写作范式，看清自己的稿件与目标之间还差在哪——诊断在前，示范在侧，原文永远由学生自己完成。
+            面向地理学科技论文写作教学，依据子刊 / 顶刊范式对学生稿件进行结构、证据与语言层面的诊断，并提供同层级修改示范；写作本身仍由学生独立完成。
           </div>
         </div>
         <div className="masthead-right">
@@ -545,7 +545,7 @@ export default function Home() {
         }
         .wordmark .en {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 13.5px;
+          font-size: 15.5px;
           color: var(--ink-faint);
           letter-spacing: 1.5px;
           text-transform: uppercase;
@@ -558,7 +558,7 @@ export default function Home() {
         }
         .badge {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 12.5px;
+          font-size: 14.5px;
           letter-spacing: 0.8px;
           color: var(--pen);
           border: 1px solid var(--pen);
@@ -575,7 +575,7 @@ export default function Home() {
         }
         .auth-email {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 12.5px;
+          font-size: 14.5px;
           color: var(--ink-faint);
         }
         .controls {
@@ -596,7 +596,7 @@ export default function Home() {
           gap: 5px;
         }
         .field label {
-          font-size: 12.5px;
+          font-size: 14.5px;
           text-transform: uppercase;
           letter-spacing: 0.7px;
           color: var(--ink-faint);
@@ -661,7 +661,7 @@ export default function Home() {
           gap: 8px;
         }
         .history-toggle {
-          font-size: 14px;
+          font-size: 16px;
           color: var(--ink-soft);
           background: transparent;
           border: 1px dashed var(--line);
@@ -669,7 +669,7 @@ export default function Home() {
           text-align: left;
         }
         .history-clear-all {
-          font-size: 13.5px;
+          font-size: 15.5px;
           color: var(--pen);
           background: transparent;
           border: 1px solid var(--pen);
@@ -683,7 +683,7 @@ export default function Home() {
           gap: 8px;
         }
         .history-remove {
-          font-size: 12.5px;
+          font-size: 14.5px;
           color: var(--ink-faint);
           background: transparent;
           border: none;
@@ -707,7 +707,7 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           gap: 2px;
-          font-size: 13.5px;
+          font-size: 15.5px;
         }
         .history-meta {
           font-family: 'IBM Plex Mono', monospace;
@@ -722,7 +722,7 @@ export default function Home() {
           color: var(--ink);
         }
         .history-note {
-          font-size: 12.5px;
+          font-size: 14.5px;
           color: var(--ink-faint);
           padding: 8px 14px;
           border: 1px solid var(--line);
@@ -758,7 +758,7 @@ export default function Home() {
           font-weight: 600;
         }
         .panel-head .hint {
-          font-size: 12.5px;
+          font-size: 14.5px;
           color: var(--ink-faint);
           font-family: 'IBM Plex Mono', monospace;
         }
@@ -780,7 +780,7 @@ export default function Home() {
         }
         .diag-status {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 13.5px;
+          font-size: 15.5px;
           color: var(--ink-faint);
           padding: 2px 18px 0;
           min-height: 18px;
@@ -815,7 +815,7 @@ export default function Home() {
           border-radius: 4px;
         }
         .score-comment {
-          font-size: 14px;
+          font-size: 16px;
           color: var(--ink-soft);
           line-height: 1.55;
         }
@@ -863,13 +863,13 @@ export default function Home() {
           margin-bottom: 5px;
         }
         .comment-issue {
-          font-size: 14px;
+          font-size: 16px;
           font-weight: 600;
           color: var(--pen);
           margin-bottom: 3px;
         }
         .comment-practice {
-          font-size: 14px;
+          font-size: 16px;
           color: var(--ink-soft);
           line-height: 1.55;
         }
@@ -917,7 +917,7 @@ export default function Home() {
         }
         .cite-chip {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 13.5px;
+          font-size: 15.5px;
           padding: 5px 10px;
           border-radius: 14px;
           background: var(--paper);
@@ -966,7 +966,7 @@ export default function Home() {
           }
         }
         .roadmap-item {
-          font-size: 14px;
+          font-size: 16px;
           color: var(--ink-soft);
           line-height: 1.55;
           padding: 12px;
@@ -983,7 +983,7 @@ export default function Home() {
         .stats-line {
           margin-top: 14px;
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 13px;
+          font-size: 15px;
           color: var(--ink-faint);
         }
       `}</style>
