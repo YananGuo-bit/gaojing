@@ -241,7 +241,7 @@ export default function Home() {
             <span className="en">Manuscript Mirror · AI 科研写作诊断</span>
           </div>
           <div className="tagline">
-            面向地理学科技论文写作教学，依据子刊 / 顶刊范式对学生稿件进行结构、证据与语言层面的诊断，并提供同层级修改示范；写作本身仍由学生独立完成。
+            依据经典范文与专业领域范文，对学生稿件进行结构、证据与语言层面的诊断示范。
           </div>
         </div>
         <div className="masthead-right">
