@@ -7,6 +7,22 @@ export const DISCIPLINES = [
   { value: '医学与生命科学', label: '医学与生命科学（即将开放）', enabled: false },
 ] as const;
 
+/** Starter list of target journals per discipline. Free-text fallback covers everything else. */
+export const TARGET_JOURNALS: Record<string, string[]> = {
+  地理科学: [
+    'Nature Geoscience',
+    'Nature Communications',
+    'Earth-Science Reviews',
+    'Geophysical Research Letters',
+    'Journal of Geophysical Research: Earth Surface',
+    'Remote Sensing of Environment',
+    'Journal of Geographical Sciences',
+    '地理学报',
+    '地理研究',
+    'Progress in Physical Geography',
+  ],
+};
+
 export type Dimension = { key: string; label: string };
 
 export type SectionConfig = {

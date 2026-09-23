@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { DISCIPLINES, SECTIONS, getSection } from '@/lib/rubric';
+import { DISCIPLINES, TARGET_JOURNALS, SECTIONS, getSection } from '@/lib/rubric';
 
 const SAMPLE_TEXT =
   '青藏高原多年冻土区的地表形变对气候变暖高度敏感，然而已有研究多聚焦于单点监测或短时间序列观测，缺乏区域尺度、长时序的形变过程刻画。本文利用InSAR技术反演了2015—2022年若尔盖地区的地表形变速率，发现形变呈现出明显的季节性波动特征。已有研究（Wang et al., 2019）也提到过类似现象，但未对其驱动机制做进一步讨论。本文认为，气温与降水的共同作用可能是造成这一现象的原因，后续将结合更多站点数据进行验证。';
@@ -106,6 +106,7 @@ export default function Home() {
   const { data: session, status: sessionStatus } = useSession();
   const [authEnabled, setAuthEnabled] = useState(false);
   const [discipline, setDiscipline] = useState('地理科学');
+  const [journalChoice, setJournalChoice] = useState('');
   const [targetJournal, setTargetJournal] = useState('');
   const [sectionKey, setSectionKey] = useState('introduction');
   const [manuscript, setManuscript] = useState(SAMPLE_TEXT);
@@ -280,12 +281,31 @@ export default function Home() {
         </div>
         <div className="field">
           <label>目标期刊</label>
-          <input
-            type="text"
-            value={targetJournal}
-            onChange={(e) => setTargetJournal(e.target.value)}
-            placeholder="输入目标期刊名称（可留空）"
-          />
+          <select
+            value={journalChoice}
+            onChange={(e) => {
+              const v = e.target.value;
+              setJournalChoice(v);
+              setTargetJournal(v === '__custom__' ? '' : v);
+            }}
+          >
+            <option value="">不限定（按学科通行标准）</option>
+            {(TARGET_JOURNALS[discipline] || []).map((j) => (
+              <option key={j} value={j}>
+                {j}
+              </option>
+            ))}
+            <option value="__custom__">其他（手动输入）</option>
+          </select>
+          {journalChoice === '__custom__' && (
+            <input
+              type="text"
+              value={targetJournal}
+              onChange={(e) => setTargetJournal(e.target.value)}
+              placeholder="输入目标期刊名称"
+              style={{ marginTop: 6 }}
+            />
+          )}
         </div>
         <div className="field">
           <label>文段类型</label>
