@@ -282,6 +282,7 @@ export default function Home() {
         <div className="field">
           <label>目标期刊</label>
           <select
+            className="journal-select"
             value={journalChoice}
             onChange={(e) => {
               const v = e.target.value;
@@ -289,7 +290,7 @@ export default function Home() {
               setTargetJournal(v === '__custom__' ? '' : v);
             }}
           >
-            <option value="">不限定（按学科通行标准）</option>
+            <option value="">不限定</option>
             {(TARGET_JOURNALS[discipline] || []).map((j) => (
               <option key={j} value={j}>
                 {j}
@@ -300,6 +301,7 @@ export default function Home() {
           {journalChoice === '__custom__' && (
             <input
               type="text"
+              className="journal-select"
               value={targetJournal}
               onChange={(e) => setTargetJournal(e.target.value)}
               placeholder="输入目标期刊名称"
@@ -631,6 +633,11 @@ export default function Home() {
           border-radius: 5px;
           padding: 7px 10px;
           min-width: 170px;
+        }
+        .journal-select {
+          width: 190px;
+          max-width: 190px;
+          text-overflow: ellipsis;
         }
         .spacer {
           flex: 1;
