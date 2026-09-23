@@ -7,12 +7,6 @@ export const DISCIPLINES = [
   { value: '医学与生命科学', label: '医学与生命科学（即将开放）', enabled: false },
 ] as const;
 
-export const TIERS = [
-  { value: '普通专业期刊', label: '普通专业期刊' },
-  { value: '领域子刊', label: '高级范文（如 Nature Geoscience）' },
-  { value: '顶刊', label: '经典范文（如 Nature）' },
-] as const;
-
 export type Dimension = { key: string; label: string };
 
 export type SectionConfig = {
@@ -94,7 +88,7 @@ export const SECTIONS: SectionConfig[] = [
     key: 'highlights',
     label: 'Highlights',
     genreInstruction:
-      '这是投稿用的 Highlights（要点提炼），通常是 3-5 条简短要点，每条建议不超过85个字符（Cell / Nature 系列期刊的常见惯例）。请按此文体标准评判：是否足够简洁凝练、是否让创新点一眼可见、关键词是否精准而不空泛。改写示范请仍然输出为 3-5 条独立要点（用换行分隔），不要写成完整段落。',
+      '这是投稿用的 Highlights（要点提炼），通常是 3-5 条简短要点，每条建议不超过85个字符（国际主流期刊的常见惯例）。请按此文体标准评判：是否足够简洁凝练、是否让创新点一眼可见、关键词是否精准而不空泛。改写示范请仍然输出为 3-5 条独立要点（用换行分隔），不要写成完整段落。',
     dimensions: [
       { key: 'conciseness', label: '简洁凝练度' },
       { key: 'salience', label: '创新点显著度' },

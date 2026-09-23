@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { DISCIPLINES, TIERS, SECTIONS, getSection } from '@/lib/rubric';
+import { DISCIPLINES, SECTIONS, getSection } from '@/lib/rubric';
 
 const SAMPLE_TEXT =
   '青藏高原多年冻土区的地表形变对气候变暖高度敏感，然而已有研究多聚焦于单点监测或短时间序列观测，缺乏区域尺度、长时序的形变过程刻画。本文利用InSAR技术反演了2015—2022年若尔盖地区的地表形变速率，发现形变呈现出明显的季节性波动特征。已有研究（Wang et al., 2019）也提到过类似现象，但未对其驱动机制做进一步讨论。本文认为，气温与降水的共同作用可能是造成这一现象的原因，后续将结合更多站点数据进行验证。';
 
 const STATIC_EXAMPLE = {
   tier_verdict:
-    '这段引言目前更接近普通专业期刊水平：研究缺口交代清楚，但因果表述偏推测、证据链未闭合，距离子刊/顶刊要求的"证据—机制—意义"递进结构还有明显差距。',
+    '这段引言目前更接近普通专业期刊水平：研究缺口交代清楚，但因果表述偏推测、证据链未闭合，距离目标期刊要求的"证据—机制—意义"递进结构还有明显差距。',
   scores: {
     logic: { score: 58, comment: '缺口—方法—发现—机制推测的顺序合理，但"可能是"式的软表述削弱了论证力度。' },
     evidence: { score: 46, comment: '仅引用一篇同类研究作为对照，未与更广的区域研究或已知机制文献形成证据网络。' },
@@ -20,18 +20,18 @@ const STATIC_EXAMPLE = {
       quote: '已有研究多聚焦于单点监测',
       issue: '研究缺口陈述过于笼统',
       top_journal_practice:
-        '顶刊通常会点名1-2项代表性研究并具体指出其时空局限（如覆盖范围、时间分辨率），让缺口可被验证。',
+        '高水平期刊通常会点名1-2项代表性研究并具体指出其时空局限（如覆盖范围、时间分辨率），让缺口可被验证。',
     },
     {
       quote: '发现形变呈现出明显的季节性波动特征',
       issue: '核心发现缺少量化支撑',
-      top_journal_practice: '子刊/顶刊会在同一句给出量级与不确定性范围，例如具体的形变速率区间和置信水平。',
+      top_journal_practice: '高水平期刊通常会在同一句给出量级与不确定性范围，例如具体的形变速率区间和置信水平。',
     },
     {
       quote: '本文认为，气温与降水的共同作用可能是造成这一现象的原因',
       issue: '机制解释使用推测语气，未与证据挂钩',
       top_journal_practice:
-        '顶刊倾向于用"与...一致""支持了...假设"等表述，把推测锚定在已呈现的数据或文献证据上。',
+        '高水平期刊倾向于用"与...一致""支持了...假设"等表述，把推测锚定在已呈现的数据或文献证据上。',
     },
   ],
   rewrite:
@@ -106,7 +106,7 @@ export default function Home() {
   const { data: session, status: sessionStatus } = useSession();
   const [authEnabled, setAuthEnabled] = useState(false);
   const [discipline, setDiscipline] = useState('地理科学');
-  const [tier, setTier] = useState('领域子刊');
+  const [targetJournal, setTargetJournal] = useState('');
   const [sectionKey, setSectionKey] = useState('introduction');
   const [manuscript, setManuscript] = useState(SAMPLE_TEXT);
   const [diagnosis, setDiagnosis] = useState<Diagnosis>(STATIC_EXAMPLE as Diagnosis);
@@ -181,7 +181,7 @@ export default function Home() {
       const res = await fetch('/api/diagnose', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ discipline, tier, section: sectionKey, text }),
+        body: JSON.stringify({ discipline, tier: targetJournal, section: sectionKey, text }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -204,7 +204,7 @@ export default function Home() {
             id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             time: new Date().toISOString(),
             discipline,
-            tier,
+            tier: targetJournal,
             sectionLabel: section.label,
             manuscriptPreview: text.slice(0, 60) + (text.length > 60 ? '…' : ''),
             tierVerdict: data.tier_verdict,
@@ -279,14 +279,13 @@ export default function Home() {
           </select>
         </div>
         <div className="field">
-          <label>对标层级</label>
-          <select value={tier} onChange={(e) => setTier(e.target.value)}>
-            {TIERS.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
+          <label>目标期刊</label>
+          <input
+            type="text"
+            value={targetJournal}
+            onChange={(e) => setTargetJournal(e.target.value)}
+            placeholder="输入目标期刊名称（可留空）"
+          />
         </div>
         <div className="field">
           <label>文段类型</label>
@@ -303,7 +302,7 @@ export default function Home() {
           载入示例文本
         </button>
         <button type="button" className="primary" onClick={runDiagnosis} disabled={running}>
-          {running ? 'AI 正在比对顶刊范式…' : needsLogin ? '登录后开始诊断' : '开始诊断（调用 AI）'}
+          {running ? 'AI 正在生成诊断…' : needsLogin ? '登录后开始诊断' : '开始诊断（调用 AI）'}
         </button>
       </div>
 
@@ -331,7 +330,7 @@ export default function Home() {
                 <div className="history-item" key={h.id}>
                   <div className="history-item-row">
                     <span className="history-meta">
-                      {new Date(h.time).toLocaleString('zh-CN')} · {h.discipline} · {h.tier} · {h.sectionLabel}
+                      {new Date(h.time).toLocaleString('zh-CN')} · {h.discipline} · {h.tier || '未指定期刊'} · {h.sectionLabel}
                     </span>
                     <button type="button" className="history-remove" onClick={() => removeSessionRecord(h.id)}>
                       删除
@@ -357,7 +356,7 @@ export default function Home() {
               {history.map((h) => (
                 <div className="history-item" key={h.id}>
                   <span className="history-meta">
-                    {new Date(h.created_at).toLocaleString('zh-CN')} · {h.discipline} · {h.tier} · {h.section}
+                    {new Date(h.created_at).toLocaleString('zh-CN')} · {h.discipline} · {h.tier || '未指定期刊'} · {h.section}
                   </span>
                   <span className="history-verdict">{h.tier_verdict}</span>
                 </div>
@@ -387,7 +386,7 @@ export default function Home() {
                 <div>{manuscript.trim()}</div>
               </div>
               <div className="compare-col rewrite">
-                <span className="compare-label">对照示范 · 同层级改写</span>
+                <span className="compare-label">对照示范 · 目标期刊定位改写</span>
                 <div style={{ whiteSpace: 'pre-line' }}>{diagnosis.rewrite}</div>
               </div>
             </div>
@@ -449,7 +448,7 @@ export default function Home() {
                     <div className="comment-quote">“{c.quote}”</div>
                     <div className="comment-issue">{c.issue}</div>
                     <div className="comment-practice">
-                      <b>对标层级通常这样处理：</b>
+                      <b>目标期刊通常这样处理：</b>
                       {c.top_journal_practice}
                     </div>
                   </div>
@@ -545,20 +544,20 @@ export default function Home() {
         }
         .wordmark .en {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 15.5px;
+          font-size: 17.5px;
           color: var(--ink-faint);
           letter-spacing: 1.5px;
           text-transform: uppercase;
         }
         .tagline {
-          font-size: 15.5px;
+          font-size: 17.5px;
           color: var(--ink-soft);
           max-width: 56ch;
           line-height: 1.6;
         }
         .badge {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 14.5px;
+          font-size: 16.5px;
           letter-spacing: 0.8px;
           color: var(--pen);
           border: 1px solid var(--pen);
@@ -575,7 +574,7 @@ export default function Home() {
         }
         .auth-email {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 14.5px;
+          font-size: 16.5px;
           color: var(--ink-faint);
         }
         .controls {
@@ -596,15 +595,16 @@ export default function Home() {
           gap: 5px;
         }
         .field label {
-          font-size: 14.5px;
+          font-size: 16.5px;
           text-transform: uppercase;
           letter-spacing: 0.7px;
           color: var(--ink-faint);
           font-weight: 500;
         }
-        select {
+        select,
+        .field input[type='text'] {
           font-family: inherit;
-          font-size: 15px;
+          font-size: 17px;
           color: var(--ink);
           background: var(--paper);
           border: 1px solid var(--line);
@@ -617,7 +617,7 @@ export default function Home() {
         }
         button {
           font-family: 'IBM Plex Sans', sans-serif;
-          font-size: 15px;
+          font-size: 17px;
           font-weight: 500;
           border-radius: 5px;
           border: 1px solid var(--line);
@@ -636,7 +636,7 @@ export default function Home() {
           cursor: not-allowed;
         }
         .banner {
-          font-size: 14.5px;
+          font-size: 16.5px;
           padding: 10px 14px;
           border-radius: 6px;
           margin-bottom: 18px;
@@ -661,7 +661,7 @@ export default function Home() {
           gap: 8px;
         }
         .history-toggle {
-          font-size: 16px;
+          font-size: 18px;
           color: var(--ink-soft);
           background: transparent;
           border: 1px dashed var(--line);
@@ -669,7 +669,7 @@ export default function Home() {
           text-align: left;
         }
         .history-clear-all {
-          font-size: 15.5px;
+          font-size: 17.5px;
           color: var(--pen);
           background: transparent;
           border: 1px solid var(--pen);
@@ -683,7 +683,7 @@ export default function Home() {
           gap: 8px;
         }
         .history-remove {
-          font-size: 14.5px;
+          font-size: 16.5px;
           color: var(--ink-faint);
           background: transparent;
           border: none;
@@ -707,7 +707,7 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           gap: 2px;
-          font-size: 15.5px;
+          font-size: 17.5px;
         }
         .history-meta {
           font-family: 'IBM Plex Mono', monospace;
@@ -722,7 +722,7 @@ export default function Home() {
           color: var(--ink);
         }
         .history-note {
-          font-size: 14.5px;
+          font-size: 16.5px;
           color: var(--ink-faint);
           padding: 8px 14px;
           border: 1px solid var(--line);
@@ -758,7 +758,7 @@ export default function Home() {
           font-weight: 600;
         }
         .panel-head .hint {
-          font-size: 14.5px;
+          font-size: 16.5px;
           color: var(--ink-faint);
           font-family: 'IBM Plex Mono', monospace;
         }
@@ -780,7 +780,7 @@ export default function Home() {
         }
         .diag-status {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 15.5px;
+          font-size: 17.5px;
           color: var(--ink-faint);
           padding: 2px 18px 0;
           min-height: 18px;
@@ -797,12 +797,12 @@ export default function Home() {
           align-items: baseline;
         }
         .score-name {
-          font-size: 14.5px;
+          font-size: 16.5px;
           font-weight: 600;
         }
         .score-num {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 14.5px;
+          font-size: 16.5px;
         }
         .score-track {
           height: 7px;
@@ -815,7 +815,7 @@ export default function Home() {
           border-radius: 4px;
         }
         .score-comment {
-          font-size: 16px;
+          font-size: 18px;
           color: var(--ink-soft);
           line-height: 1.55;
         }
@@ -839,7 +839,7 @@ export default function Home() {
           font-style: italic;
         }
         .verdict {
-          font-size: 15px;
+          font-size: 17px;
           line-height: 1.6;
           color: var(--ink);
           background: var(--accent-tint);
@@ -858,18 +858,18 @@ export default function Home() {
         .comment-quote {
           font-family: 'Source Serif 4', Georgia, serif;
           font-style: italic;
-          font-size: 15px;
+          font-size: 17px;
           color: var(--ink);
           margin-bottom: 5px;
         }
         .comment-issue {
-          font-size: 16px;
+          font-size: 18px;
           font-weight: 600;
           color: var(--pen);
           margin-bottom: 3px;
         }
         .comment-practice {
-          font-size: 16px;
+          font-size: 18px;
           color: var(--ink-soft);
           line-height: 1.55;
         }
@@ -889,7 +889,7 @@ export default function Home() {
         }
         .compare-col {
           padding: 18px;
-          font-size: 16px;
+          font-size: 18px;
           line-height: 1.8;
           font-family: 'Source Serif 4', Georgia, serif;
         }
@@ -903,7 +903,7 @@ export default function Home() {
         }
         .compare-label {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 12px;
+          font-size: 14.5px;
           text-transform: uppercase;
           letter-spacing: 0.7px;
           color: var(--ink-faint);
@@ -917,7 +917,7 @@ export default function Home() {
         }
         .cite-chip {
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 15.5px;
+          font-size: 17.5px;
           padding: 5px 10px;
           border-radius: 14px;
           background: var(--paper);
@@ -933,7 +933,7 @@ export default function Home() {
           margin-right: 6px;
         }
         .cite-empty {
-          font-size: 14.5px;
+          font-size: 16.5px;
           color: var(--ink-faint);
         }
         .roadmap {
@@ -942,7 +942,7 @@ export default function Home() {
           padding-top: 18px;
         }
         .roadmap h3 {
-          font-size: 14.5px;
+          font-size: 16.5px;
           text-transform: uppercase;
           letter-spacing: 0.6px;
           color: var(--ink-faint);
@@ -966,7 +966,7 @@ export default function Home() {
           }
         }
         .roadmap-item {
-          font-size: 16px;
+          font-size: 18px;
           color: var(--ink-soft);
           line-height: 1.55;
           padding: 12px;
@@ -977,13 +977,13 @@ export default function Home() {
           display: block;
           color: var(--ink);
           font-weight: 600;
-          font-size: 14.5px;
+          font-size: 16.5px;
           margin-bottom: 4px;
         }
         .stats-line {
           margin-top: 14px;
           font-family: 'IBM Plex Mono', monospace;
-          font-size: 15px;
+          font-size: 17px;
           color: var(--ink-faint);
         }
       `}</style>

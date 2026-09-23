@@ -42,11 +42,14 @@ function buildResponseSchema(section: SectionConfig) {
   };
 }
 
-function buildPrompt(discipline: string, tier: string, section: SectionConfig, text: string) {
+function buildPrompt(discipline: string, targetJournal: string, section: SectionConfig, text: string) {
   const dimensionList = section.dimensions.map((d) => `  - ${d.key}: ${d.label}`).join('\n');
-  return `你是一名长期在 Nature 系列期刊担任编委、审稿经验丰富的地球科学领域科研写作导师，擅长指出学生稿件与顶刊/子刊写作范式之间的具体差距。
+  const journalLine = targetJournal
+    ? `诊断对标期刊：${targetJournal}（请结合该期刊的真实写作与评审惯例判断差距）。`
+    : '诊断对标期刊：未指定，请按该学科高水平期刊的通行写作标准判断。';
+  return `你是一名审稿经验丰富的地球科学领域科研写作导师，擅长指出学生稿件与高水平期刊写作范式之间的具体差距。
 
-学科方向：${discipline}；诊断对标层级：${tier}。
+学科方向：${discipline}；${journalLine}
 
 ${section.genreInstruction}
 
@@ -56,11 +59,11 @@ ${text.slice(0, 3000)}
 """
 
 请给出诊断结果，字段要求：
-- tier_verdict：一句话判断这段文字目前更接近哪个层级、核心原因是什么，40-70字。
+- tier_verdict：一句话判断这段文字与目标期刊的差距处于什么水平、核心原因是什么，40-70字。
 - scores：以下每个维度给 0-100 的整数分和 20-40 字评语：
 ${dimensionList}
-- comments：3到5条，每条包含从原文逐字摘录的一小段（不超过20字）、具体问题（15-25字）、对标层级在同样位置通常怎么处理（给出具体可操作的做法，30-60字）。
-- rewrite：将学生原文改写为更接近目标层级写作风格的示范版本，仅用于对照学习，长度不超过原文的1.3倍，保留原文的核心研究内容，不得虚构新数据。`;
+- comments：3到5条，每条包含从原文逐字摘录的一小段（不超过20字）、具体问题（15-25字）、目标期刊在同样位置通常怎么处理（给出具体可操作的做法，30-60字）。
+- rewrite：将学生原文改写为更接近目标期刊写作风格的示范版本，仅用于对照学习，长度不超过原文的1.3倍，保留原文的核心研究内容，不得虚构新数据。`;
 }
 
 export async function POST(req: NextRequest) {
@@ -104,7 +107,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const prompt = buildPrompt(String(discipline || '地理科学'), String(tier || '领域子刊'), section, text);
+  const prompt = buildPrompt(String(discipline || '地理科学'), String(tier || ''), section, text);
 
   const model = 'gemini-3.6-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
